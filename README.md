@@ -144,11 +144,4 @@ For support, questions, or feedback, please open an issue on the GitHub reposito
 
 ## Author
 
-**Krishna Sharma** - [@krishna3163](https://github.com/krishna3163)
-
-## Acknowledgments
-
-- Built with [Vite](https://vitejs.dev/)
-- Powered by [Google Gemini AI](https://ai.google.dev/)
-- UI animations with [Framer Motion](https://www.framer.com/motion/)
-- Styling with [Tailwind CSS](https://tailwindcss.com/)
+**Krishna Kumar** - [@krishna3163](https://github.com/krishna3163)
