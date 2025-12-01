@@ -1,36 +1,21 @@
 
-import { UserSettings, FocusSession, PetState, ThemeType, PetType, PetMood } from '../types';
+import { UserSettings, Appointment } from '../types';
 
-const STORAGE_KEY = 'bubble_focus_data_v3';
+const STORAGE_KEY = 'docbook_data_v2';
 
 export interface AppData {
   settings: UserSettings;
-  sessions: FocusSession[];
-  pet: PetState;
+  appointments: Appointment[];
 }
 
 export const defaultSettings: UserSettings = {
-  theme: ThemeType.BUBBLE,
-  petType: PetType.CAT,
-  dailyGoalMinutes: 120,
-  strictMode: false,
-  blocklist: ['instagram.com', 'tiktok.com', 'facebook.com', 'twitter.com', 'reddit.com'],
-  soundEnabled: true,
+  username: '',
+  age: '',
+  gender: 'Not Specified',
   apiKey: '',
   notificationsEnabled: false,
-  focusStartHour: '09:00',
-  focusEndHour: '17:00',
-  dailyScreenTimeLimit: 240, // 4 hours
-  username: 'Friend'
-};
-
-export const defaultPet: PetState = {
-  name: 'Mochi',
-  level: 1,
-  xp: 0,
-  health: 100,
-  happiness: 100,
-  mood: PetMood.HAPPY
+  onboardingComplete: false,
+  isAdmin: false
 };
 
 export const saveAppData = (data: AppData) => {
@@ -46,10 +31,10 @@ export const loadAppData = (): AppData => {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const data = JSON.parse(raw);
+      // Merge with defaultSettings to ensure new fields (like onboardingComplete, isAdmin) exist
       return {
         settings: { ...defaultSettings, ...data.settings },
-        sessions: Array.isArray(data.sessions) ? data.sessions : [],
-        pet: { ...defaultPet, ...data.pet }
+        appointments: Array.isArray(data.appointments) ? data.appointments : [],
       };
     }
   } catch (e) {
@@ -57,8 +42,7 @@ export const loadAppData = (): AppData => {
   }
   return {
     settings: defaultSettings,
-    sessions: [],
-    pet: defaultPet
+    appointments: [],
   };
 };
 
@@ -67,7 +51,7 @@ export const exportData = (data: AppData) => {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `bubble-focus-backup-${new Date().toISOString().split('T')[0]}.json`;
+  a.download = `docbook-backup-${new Date().toISOString().split('T')[0]}.json`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -81,7 +65,7 @@ export const importData = async (file: File): Promise<AppData | null> => {
       try {
         const text = e.target?.result as string;
         const data = JSON.parse(text);
-        if (data.settings && data.sessions && data.pet) {
+        if (data.settings && data.appointments) {
           resolve(data as AppData);
         } else {
           reject(new Error("Invalid file format"));

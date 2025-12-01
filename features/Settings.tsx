@@ -1,169 +1,158 @@
+
 import React from 'react';
-import { UserSettings, ThemeType, PetType, AppView } from '../types';
-import { Bell, Lock, Download, Shield, Clock, Smile } from 'lucide-react';
-import { exportData, importData, AppData } from '../services/storage';
+import { UserSettings, AppView } from '../types';
+import { Bell, User, Key, Save, ExternalLink, Info, Heart, Mail, Github, Linkedin } from 'lucide-react';
+import { exportData, AppData } from '../services/storage';
 
 interface SettingsProps {
   settings: UserSettings;
   updateSettings: (s: Partial<UserSettings>) => void;
-  onImport: (data: AppData) => void;
   fullData: AppData;
-  setView: (view: AppView) => void;
 }
 
-export const SettingsPanel: React.FC<SettingsProps> = ({ settings, updateSettings, onImport, fullData, setView }) => {
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
-
-  const requestNotificationPermission = async () => {
-    if (!('Notification' in window)) {
-      alert("This browser does not support notifications.");
-      return;
-    }
-    const permission = await Notification.requestPermission();
-    if (permission === 'granted') {
-      updateSettings({ notificationsEnabled: true });
-    } else {
-        alert("Permission denied.");
-    }
-  };
-
-  const handleFileImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files?.[0]) {
-      try {
-        const data = await importData(e.target.files[0]);
-        if (data) onImport(data);
-      } catch (err) {
-        alert('Invalid backup file.');
-      }
-    }
-  };
-
+export const SettingsPanel: React.FC<SettingsProps> = ({ settings, updateSettings, fullData }) => {
   return (
-    <div className="w-full space-y-6 pb-24">
+    <div className="w-full max-w-2xl mx-auto pb-24 space-y-8">
       <h2 className="text-3xl font-bold text-white mb-6">Settings</h2>
 
-      {/* Profile / Appearance */}
-      <section className="glass-card p-6">
-        <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-4">Appearance & Vibe</h3>
-        
-        <div className="space-y-4">
-             <div>
-                <label className="text-sm font-semibold text-gray-300 ml-1">My Name</label>
-                <input 
-                    type="text"
-                    value={settings.username}
-                    onChange={(e) => updateSettings({ username: e.target.value })}
-                    className="w-full mt-2 bg-[#0B0A10] border border-[#2D2B3B] rounded-xl p-3 text-sm font-medium outline-none text-white focus:border-violet-500 transition-all"
-                    placeholder="What should we call you?"
-                />
-             </div>
-        </div>
-      </section>
-
-      {/* Pet Selection */}
-      <section className="glass-card p-6">
-        <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-4">Pet Companion</h3>
-        <div className="grid grid-cols-4 gap-3">
-          {[
-            { t: PetType.CAT, l: 'Cat', e: '🐱' },
-            { t: PetType.DOG, l: 'Dog', e: '🐶' },
-            { t: PetType.ROBOT, l: 'Robot', e: '🤖' },
-            { t: PetType.BLOB, l: 'Blob', e: '🟣' }
-          ].map(p => (
-            <button
-              key={p.t}
-              onClick={() => updateSettings({ petType: p.t })}
-              className={`py-4 rounded-2xl border transition-all flex flex-col items-center justify-center space-y-2 ${
-                settings.petType === p.t 
-                  ? 'border-violet-500 bg-violet-500/10 text-violet-300 shadow-md transform scale-105' 
-                  : 'border-transparent bg-[#0B0A10] text-gray-400 hover:bg-[#2D2B3B]'
-              }`}
-            >
-              <span className="text-3xl">{p.e}</span>
-              <span className="text-[10px] font-bold uppercase tracking-wider">{p.l}</span>
-            </button>
-          ))}
-        </div>
-      </section>
-
-      {/* Permissions & Notifications */}
-      <section className="glass-card p-6 border-violet-500/30">
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="font-bold flex items-center gap-2 text-white">
-            <Bell size={20} className="text-violet-400"/>
-            Notifications
-          </h3>
-          <div className={`text-[10px] font-bold px-3 py-1 rounded-full ${settings.notificationsEnabled ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}`}>
-            {settings.notificationsEnabled ? 'ENABLED' : 'DISABLED'}
-          </div>
-        </div>
-        {!settings.notificationsEnabled && (
-          <button 
-            onClick={requestNotificationPermission}
-            className="w-full mt-4 py-3 rounded-xl bg-violet-600 text-white font-bold shadow-lg hover:bg-violet-500 transition-colors"
-          >
-            Allow Notifications
-          </button>
-        )}
-      </section>
-      
       {/* API Key */}
-      <section className="glass-card p-6">
-         <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-4">Google API Key (for AI chats)</h3>
+      <section className="glass-card p-6 border-cyan-500/20">
+         <div className="flex items-center gap-2 mb-4">
+            <Key className="text-cyan-400" size={20} />
+            <h3 className="text-sm font-bold text-cyan-400 uppercase tracking-wider">Google API Key</h3>
+         </div>
+         <div className="flex justify-between items-center mb-3">
+            <p className="text-xs text-gray-400">Required to search for doctors using AI.</p>
+            <a 
+              href="https://aistudio.google.com/api-keys" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="text-xs text-cyan-400 hover:text-cyan-300 underline flex items-center gap-1"
+            >
+              Get API Key <ExternalLink size={10} />
+            </a>
+         </div>
          <input 
             type="password"
             value={settings.apiKey}
             onChange={(e) => updateSettings({ apiKey: e.target.value })}
-            className="w-full bg-[#0B0A10] border border-[#2D2B3B] rounded-xl p-3 text-sm font-medium outline-none text-white focus:border-violet-500 transition-all placeholder-gray-600"
+            className="w-full bg-[#0B1120] border border-gray-700 rounded-xl p-3 text-sm font-medium outline-none text-white focus:border-cyan-500 transition-all placeholder-gray-600"
             placeholder="sk-..."
         />
       </section>
 
-      {/* Focus Schedule */}
-      <section className="glass-card p-6 space-y-4">
-        <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
-          <Clock size={16} />
-          Focus Schedule
-        </h3>
+      {/* Profile Section */}
+      <section className="glass-card p-6">
+        <div className="flex items-center gap-2 mb-6">
+            <User className="text-cyan-400" size={20} />
+            <h3 className="text-sm font-bold text-cyan-400 uppercase tracking-wider">Patient Profile</h3>
+        </div>
         
-        <div className="grid grid-cols-2 gap-4">
-           <div>
-              <label className="text-xs font-bold text-gray-400 ml-1">Start Hour</label>
-              <input 
-                type="time" 
-                value={settings.focusStartHour}
-                onChange={(e) => updateSettings({ focusStartHour: e.target.value })}
-                className="w-full mt-1 bg-[#0B0A10] border border-[#2D2B3B] rounded-xl p-3 text-sm text-white font-semibold outline-none focus:border-violet-500 transition-all"
-              />
-           </div>
-           <div>
-              <label className="text-xs font-bold text-gray-400 ml-1">End Hour</label>
-              <input 
-                type="time" 
-                value={settings.focusEndHour}
-                onChange={(e) => updateSettings({ focusEndHour: e.target.value })}
-                className="w-full mt-1 bg-[#0B0A10] border border-[#2D2B3B] rounded-xl p-3 text-sm text-white font-semibold outline-none focus:border-violet-500 transition-all"
-              />
-           </div>
+        <div className="space-y-4">
+             <div>
+                <label className="text-sm font-semibold text-gray-300 ml-1 block mb-2">Full Name</label>
+                <input 
+                    type="text"
+                    value={settings.username}
+                    onChange={(e) => updateSettings({ username: e.target.value })}
+                    className="w-full bg-[#0B1120] border border-gray-700 rounded-xl p-3 text-sm font-medium outline-none text-white focus:border-cyan-500 transition-all"
+                />
+             </div>
+             <div className="grid grid-cols-2 gap-4">
+                <div>
+                    <label className="text-sm font-semibold text-gray-300 ml-1 block mb-2">Age</label>
+                    <input 
+                        type="number"
+                        value={settings.age}
+                        onChange={(e) => updateSettings({ age: e.target.value })}
+                        className="w-full bg-[#0B1120] border border-gray-700 rounded-xl p-3 text-sm font-medium outline-none text-white focus:border-cyan-500 transition-all"
+                    />
+                </div>
+                <div>
+                    <label className="text-sm font-semibold text-gray-300 ml-1 block mb-2">Gender</label>
+                    <select 
+                        value={settings.gender}
+                        onChange={(e) => updateSettings({ gender: e.target.value })}
+                        className="w-full bg-[#0B1120] border border-gray-700 rounded-xl p-3 text-sm font-medium outline-none text-white focus:border-cyan-500 transition-all"
+                    >
+                        <option value="Not Specified">Not Specified</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+             </div>
         </div>
       </section>
 
-      {/* Backup */}
-      <div className="grid grid-cols-2 gap-4">
-         <button 
-            onClick={() => exportData(fullData)}
-            className="p-5 rounded-3xl bg-[#0B0A10] text-gray-300 font-bold border border-[#2D2B3B] flex flex-col items-center justify-center hover:bg-[#1E1B2E] transition-all"
-        >
-            <Download className="mb-2 text-violet-500" size={24} />
-            <span className="text-sm">Backup Data</span>
-        </button>
-        <div className="flex flex-col items-center justify-center text-center">
-            <p onClick={() => fileInputRef.current?.click()} className="text-xs font-semibold text-gray-500 hover:text-white cursor-pointer transition-colors mt-2">
-                Import from file
-            </p>
-            <input type="file" ref={fileInputRef} className="hidden" accept=".json" onChange={handleFileImport} />
+      {/* Notifications */}
+      <section className="glass-card p-6">
+        <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-500/20 rounded-lg text-blue-400">
+                    <Bell size={18}/>
+                </div>
+                <div>
+                    <h4 className="text-sm font-bold text-white">Appointment Reminders</h4>
+                    <p className="text-xs text-gray-500">Get notified before visits</p>
+                </div>
+            </div>
+            <button 
+                onClick={() => updateSettings({ notificationsEnabled: !settings.notificationsEnabled })}
+                className={`relative w-11 h-6 rounded-full transition-colors ${settings.notificationsEnabled ? 'bg-cyan-600' : 'bg-gray-700'}`}
+             >
+                 <div className={`absolute top-1 left-1 bg-white w-4 h-4 rounded-full transition-transform ${settings.notificationsEnabled ? 'translate-x-5' : 'translate-x-0'}`}></div>
+             </button>
         </div>
-      </div>
+      </section>
+      
+      <button 
+        onClick={() => exportData(fullData)}
+        className="w-full p-4 rounded-xl bg-[#0B1120] text-gray-300 font-bold border border-gray-700 flex items-center justify-center gap-2 hover:bg-[#1E293B] transition-all"
+      >
+        <Save size={18} /> Backup Data
+      </button>
+
+      {/* About Section */}
+      <section className="glass-card p-6 border-l-4 border-indigo-500 mt-8">
+        <div className="flex items-center gap-2 mb-4">
+            <Info className="text-indigo-400" size={20} />
+            <h3 className="text-sm font-bold text-indigo-400 uppercase tracking-wider">About AI Medical Assistant</h3>
+        </div>
+        <div className="text-gray-300 space-y-2 text-sm leading-relaxed">
+            <p>
+              DocBook is an advanced AI-powered medical assistant designed to simplify healthcare access. 
+              Find doctors, book tests, locate donors, and analyze reports securely.
+            </p>
+            
+            <div className="flex gap-4 mt-4 py-4 border-t border-white/10 flex-wrap">
+              <a href="mailto:kk3163019@gmail.com" className="flex items-center gap-2 text-xs text-gray-400 hover:text-cyan-400 transition-colors bg-white/5 px-3 py-2 rounded-lg">
+                <Mail size={14} /> kk3163019@gmail.com
+              </a>
+              <a href="https://github.com/krishna3163" target="_blank" rel="noreferrer" className="flex items-center gap-2 text-xs text-gray-400 hover:text-cyan-400 transition-colors bg-white/5 px-3 py-2 rounded-lg">
+                <Github size={14} /> GitHub
+              </a>
+              <a href="https://linkedin.com/in/krishna0858" target="_blank" rel="noreferrer" className="flex items-center gap-2 text-xs text-gray-400 hover:text-cyan-400 transition-colors bg-white/5 px-3 py-2 rounded-lg">
+                <Linkedin size={14} /> LinkedIn
+              </a>
+            </div>
+
+            <div className="mt-2 pt-4 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-4">
+                <div className="flex items-center gap-2 text-xs text-gray-400">
+                    <span>Version 2.1.0</span>
+                    <span>•</span>
+                    <span>Build 2025</span>
+                </div>
+                
+                <div className="bg-gradient-to-r from-cyan-900/30 to-indigo-900/30 px-4 py-2 rounded-full border border-white/5 flex items-center gap-2">
+                    <span className="text-gray-400 text-xs">Created by</span>
+                    <span className="text-sm font-bold bg-gradient-to-r from-cyan-400 to-indigo-400 bg-clip-text text-transparent flex items-center gap-1">
+                      Krishna <Heart size={10} className="text-red-500 fill-red-500" />
+                    </span>
+                </div>
+            </div>
+        </div>
+      </section>
     </div>
   );
 };

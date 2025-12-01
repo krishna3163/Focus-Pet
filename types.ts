@@ -1,76 +1,66 @@
 
 export enum AppView {
-  FOCUS = 'FOCUS',
-  STATS = 'STATS',
+  SEARCH = 'SEARCH',
+  HOSPITALS = 'HOSPITALS',
+  THERAPY = 'THERAPY',
+  LABS = 'LABS',
+  DONATE = 'DONATE',
+  SCAN = 'SCAN',
+  DIAGNOSIS = 'DIAGNOSIS',
+  APPOINTMENTS = 'APPOINTMENTS',
   SETTINGS = 'SETTINGS',
-  BLOCKLIST = 'BLOCKLIST'
+  ADMIN = 'ADMIN'
 }
 
-export enum ThemeType {
-  BUBBLE = 'BUBBLE',
-  MINIMAL = 'MINIMAL',
-  DARK = 'DARK',
-  FOREST = 'FOREST',
-  OCEAN = 'OCEAN'
-}
-
-export enum TimerMode {
-  POMODORO = 'POMODORO',
-  STOPWATCH = 'STOPWATCH',
-  COUNTDOWN = 'COUNTDOWN'
-}
-
-export enum PetType {
-  DOG = 'DOG',
-  CAT = 'CAT',
-  ROBOT = 'ROBOT',
-  PLANT = 'PLANT',
-  BLOB = 'BLOB'
-}
-
-export enum PetMood {
-  HAPPY = 'HAPPY',
-  SAD = 'SAD',
-  FOCUSING = 'FOCUSING',
-  SLEEPING = 'SLEEPING',
-  NEUTRAL = 'NEUTRAL'
-}
-
-export interface BlockItem {
+export interface Doctor {
   id: string;
-  url: string;
-  category: string;
+  name: string;
+  specialty: string;
+  location: string;
+  rating: number;
+  gender: string;
+  bio: string;
+  imageUrl: string;
+  availableSlots: string[];
+  website?: string; // URL for external booking
+  mapUrl?: string; // Google Maps Directions
+  phone?: string;
+  email?: string;
 }
 
-export interface FocusSession {
+export interface Appointment {
   id: string;
-  date: string;
-  durationMinutes: number;
-  mode: TimerMode;
-  completed: boolean;
-  distractions: number;
+  doctorId: string; // Or Lab ID
+  doctorName: string; // Or Lab Name
+  doctorSpecialty: string; // Or Test Type
+  date: string; // ISO date string
+  timeSlot: string;
+  status: 'UPCOMING' | 'COMPLETED' | 'CANCELLED';
+  symptoms: string;
+  type: 'DOCTOR' | 'LAB' | 'DONATION' | 'HOSPITAL' | 'THERAPY';
+  bookingUrl?: string;
 }
 
 export interface UserSettings {
-  theme: ThemeType;
-  petType: PetType;
-  dailyGoalMinutes: number;
-  strictMode: boolean; // Focus Lock
-  blocklist: string[];
-  soundEnabled: boolean;
+  username: string;
+  age: string;
+  gender: string;
   apiKey: string; 
   notificationsEnabled: boolean;
-  focusStartHour: string; // "09:00"
-  focusEndHour: string; // "17:00"
-  dailyScreenTimeLimit: number; // Minutes
-  username: string;
+  onboardingComplete: boolean;
+  bloodGroup?: string;
+  isAdmin?: boolean; // Persist admin session
 }
 
-export interface PetState {
-  name: string;
-  level: number;
-  xp: number;
-  health: number; // 0-100
-  happiness: number; // 0-100
-  mood: PetMood;
+export interface ChatMessage {
+  id: string;
+  sender: 'user' | 'ai';
+  text: string;
+  timestamp: number;
 }
+
+// Legacy types to prevent errors if referenced
+export enum PetMood { HAPPY='HAPPY', SAD='SAD', FOCUSING='FOCUSING', SLEEPING='SLEEPING' }
+export interface PetState { name: string; health: number; level: number; mood: PetMood; }
+export interface FocusSession { date: string; durationMinutes: number; completed: boolean; distractions?: string; }
+export interface BlockItem { id: string; url: string; category: string; }

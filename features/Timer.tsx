@@ -1,195 +1,222 @@
-import React, { useState, useEffect } from 'react';
-import { Play, Pause, Square, AlertTriangle } from 'lucide-react';
-import { TimerMode, UserSettings } from '../types';
 
-interface TimerProps {
-  mode: TimerMode;
-  setMode: (mode: TimerMode) => void;
-  onComplete: (minutes: number) => void;
-  onDistraction: () => void;
-  isActive: boolean;
-  setIsActive: (val: boolean) => void;
+import React, { useState } from 'react';
+import { Search, MapPin, Activity, User, Star, CalendarCheck, Phone, Mail, Check } from 'lucide-react';
+import { Doctor, UserSettings } from '../types';
+import { findDoctors } from '../services/ai';
+import { motion, AnimatePresence } from 'framer-motion';
+
+interface SearchProps {
   settings: UserSettings;
+  onBook: (doc: Doctor, slot: string, symptoms: string) => void;
 }
 
-export const Timer: React.FC<TimerProps> = ({
-  mode,
-  setMode,
-  onComplete,
-  onDistraction,
-  isActive,
-  setIsActive,
-  settings
-}) => {
-  const [timeLeft, setTimeLeft] = useState(25 * 60);
-  const [initialTime, setInitialTime] = useState(25 * 60);
-  const [stopwatchTime, setStopwatchTime] = useState(0);
+export const DoctorSearch: React.FC<SearchProps> = ({ settings, onBook }) => {
+  const [symptoms, setSymptoms] = useState("");
+  const [location, setLocation] = useState("");
+  const [gender, setGender] = useState("Any");
+  const [isLoading, setIsLoading] = useState(false);
+  const [doctors, setDoctors] = useState<Doctor[]>([]);
+  const [error, setError] = useState("");
+  const [selectedDoc, setSelectedDoc] = useState<string | null>(null);
+  const [copiedPhone, setCopiedPhone] = useState<string | null>(null);
 
-  // Focus Lock / Distraction Detection
-  useEffect(() => {
-    const handleVisibility = () => {
-      if (document.hidden && isActive) {
-         onDistraction();
-      }
-    };
-    document.addEventListener("visibilitychange", handleVisibility);
-    return () => document.removeEventListener("visibilitychange", handleVisibility);
-  }, [isActive, settings.strictMode, onDistraction]);
-
-  // Timer Tick
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-
-    if (isActive) {
-      interval = setInterval(() => {
-        if (mode === TimerMode.STOPWATCH) {
-          setStopwatchTime(t => t + 1);
-        } else {
-          setTimeLeft(t => {
-            if (t <= 1) {
-              setIsActive(false);
-              onComplete(Math.floor(initialTime / 60));
-              return 0;
-            }
-            return t - 1;
-          });
-        }
-      }, 1000);
+  const handleSearch = async () => {
+    if (!settings.apiKey) {
+      setError("Please enter your Google API Key in Settings first.");
+      return;
+    }
+    if (!symptoms || !location) {
+      setError("Please describe your symptoms and location.");
+      return;
     }
 
-    return () => clearInterval(interval);
-  }, [isActive, mode, initialTime, onComplete, setIsActive]);
+    setIsLoading(true);
+    setError("");
+    setDoctors([]);
 
-  const toggleTimer = () => setIsActive(!isActive);
-  
-  const stopTimer = () => {
-    setIsActive(false);
-    if(mode !== TimerMode.STOPWATCH) setTimeLeft(initialTime);
+    try {
+      const results = await findDoctors(settings.apiKey, symptoms, location, gender);
+      if (results.length === 0) setError("No doctors found. Try different keywords.");
+      setDoctors(results);
+    } catch (e) {
+      setError("Failed to fetch doctors. Check API key.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const setDuration = (minutes: number) => {
-    setIsActive(false);
-    setInitialTime(minutes * 60);
-    setTimeLeft(minutes * 60);
+  const copyToClipboard = (text: string | undefined, id: string) => {
+    if (!text) return;
+    navigator.clipboard.writeText(text);
+    setCopiedPhone(id);
+    setTimeout(() => setCopiedPhone(null), 2000);
   };
-
-  const formatTime = (seconds: number) => {
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
-    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-  };
-
-  const getProgress = () => {
-    if (mode === TimerMode.STOPWATCH) return 100;
-    return ((initialTime - timeLeft) / initialTime) * 100;
-  };
-
-  const radius = 110;
-  const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = circumference - (getProgress() / 100) * circumference;
 
   return (
-    <div className="glass-card p-6 md:p-8 w-full max-w-md mx-auto relative overflow-hidden group">
-      {/* Glossy Reflection & Hover Glow */}
-      <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-pink-400/5 to-transparent pointer-events-none group-hover:from-pink-400/10 transition-all"></div>
-
-      {/* Mode Switcher */}
-      <div className="flex justify-center mb-6 relative z-10">
-        <div className="inline-flex bg-black/30 p-1 rounded-xl backdrop-blur-md border border-white/5">
-            {[
-            { id: TimerMode.POMODORO, label: 'Focus' },
-            { id: TimerMode.COUNTDOWN, label: 'Short' },
-            { id: TimerMode.STOPWATCH, label: 'Long' }
-            ].map((m) => (
-            <button
-                key={m.id}
-                onClick={() => {
-                if (!isActive) {
-                    setMode(m.id);
-                    if (m.id === TimerMode.POMODORO) setDuration(25);
-                    if (m.id === TimerMode.COUNTDOWN) setDuration(5);
-                    if (m.id === TimerMode.STOPWATCH) setDuration(15);
-                }
-                }}
-                className={`px-3 md:px-5 py-2 rounded-lg text-xs md:text-sm font-semibold transition-all ${
-                mode === m.id
-                    ? 'bg-pink-500/20 text-pink-200 shadow-inner border border-pink-500/30'
-                    : 'text-gray-400 hover:text-white hover:bg-white/5'
-                }`}
-            >
-                {m.label}
-            </button>
-            ))}
-        </div>
+    <div className="w-full max-w-4xl mx-auto pb-24">
+      {/* Search Header */}
+      <div className="text-center mb-10">
+        <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent mb-4">
+          Find the Right Doctor
+        </h1>
+        <p className="text-gray-400">AI-powered matching to find the best specialists near you.</p>
       </div>
 
-      <div className="flex flex-col items-center justify-center relative z-10">
-        {/* Timer Circle */}
-        <div className="relative mb-6 md:mb-8 w-[240px] md:w-[280px] aspect-square">
-            <svg className="w-full h-full transform -rotate-90" viewBox="0 0 280 280">
-            <circle
-                cx="140"
-                cy="140"
-                r={radius}
-                stroke="rgba(255,255,255,0.05)"
-                strokeWidth="10"
-                fill="transparent"
+      {/* Search Form */}
+      <div className="glass-card p-6 md:p-8 mb-10 relative overflow-hidden">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="space-y-2">
+            <label className="text-xs font-semibold text-cyan-400 uppercase tracking-wider flex items-center gap-1">
+              <Activity size={14} /> Symptoms / Disease
+            </label>
+            <input 
+              type="text" 
+              value={symptoms}
+              onChange={(e) => setSymptoms(e.target.value)}
+              placeholder="e.g. Migraine, Fever, Skin rash"
+              className="w-full bg-[#0B1120] border border-gray-700 rounded-xl p-3 text-white focus:border-cyan-500 outline-none transition-all"
             />
-            <circle
-                cx="140"
-                cy="140"
-                r={radius}
-                stroke="url(#animeGradient)"
-                strokeWidth="10"
-                fill="transparent"
-                strokeDasharray={circumference}
-                strokeDashoffset={strokeDashoffset}
-                strokeLinecap="round"
-                className="transition-all duration-1000 ease-linear"
-                style={{ filter: 'drop-shadow(0 0 10px rgba(255, 105, 180, 0.6))' }}
+          </div>
+          
+          <div className="space-y-2">
+            <label className="text-xs font-semibold text-cyan-400 uppercase tracking-wider flex items-center gap-1">
+              <MapPin size={14} /> Location
+            </label>
+            <input 
+              type="text" 
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              placeholder="e.g. New York, NY"
+              className="w-full bg-[#0B1120] border border-gray-700 rounded-xl p-3 text-white focus:border-cyan-500 outline-none transition-all"
             />
-             <defs>
-                <linearGradient id="animeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#ff00cc" />
-                <stop offset="100%" stopColor="#3333ff" />
-                </linearGradient>
-            </defs>
-            </svg>
-            
-            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center flex flex-col items-center w-full">
-                <span className="text-5xl md:text-6xl font-bold text-white tracking-tighter mb-2 font-display drop-shadow-[0_4px_10px_rgba(255,105,180,0.5)]">
-                    {mode === TimerMode.STOPWATCH ? formatTime(stopwatchTime) : formatTime(timeLeft)}
-                </span>
-                {!isActive && (
-                  <button className="text-pink-300/70 text-xs hover:text-pink-200 transition-colors mt-1 border-b border-dashed border-pink-500/30 pb-0.5">
-                      Edit
-                  </button>
-                )}
-            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-xs font-semibold text-cyan-400 uppercase tracking-wider flex items-center gap-1">
+              <User size={14} /> Doctor Gender
+            </label>
+            <select 
+              value={gender}
+              onChange={(e) => setGender(e.target.value)}
+              className="w-full bg-[#0B1120] border border-gray-700 rounded-xl p-3 text-white focus:border-cyan-500 outline-none transition-all"
+            >
+              <option value="Any">Any Preference</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+            </select>
+          </div>
         </div>
 
-        {/* Main Controls */}
-        <div className="flex items-center gap-6">
-          <button
-              onClick={toggleTimer}
-              className={`w-16 h-16 md:w-20 md:h-20 rounded-full flex items-center justify-center shadow-2xl transition-all hover:scale-105 active:scale-95 border border-white/20 backdrop-blur-md ${
-                  isActive 
-                  ? 'bg-gradient-to-tr from-pink-500 to-purple-600 text-white shadow-pink-600/40' 
-                  : 'bg-gradient-to-tr from-[#2d1b32] to-[#1a1725] text-white shadow-lg border-pink-500/20 hover:border-pink-500/50'
-              }`}
-          >
-              {isActive ? <Pause size={32} fill="currentColor" /> : <Play size={32} fill="currentColor" className="ml-1" />}
-          </button>
-          
-          {isActive && (
-            <button
-              onClick={stopTimer}
-              className="w-12 h-12 rounded-full bg-white/5 border border-white/10 text-gray-300 flex items-center justify-center hover:bg-white/10 hover:text-white transition-all backdrop-blur-sm hover:border-red-500/50 hover:text-red-400"
-            >
-              <Square size={20} fill="currentColor" />
-            </button>
+        <button 
+          onClick={handleSearch}
+          disabled={isLoading}
+          className="w-full mt-6 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-cyan-900/20 transition-all flex items-center justify-center gap-2"
+        >
+          {isLoading ? (
+            <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+          ) : (
+            <>
+              <Search size={20} /> Search Specialists
+            </>
           )}
-        </div>
+        </button>
+
+        {error && (
+          <div className="mt-4 p-3 bg-red-900/20 border border-red-500/50 rounded-lg text-red-200 text-sm text-center">
+            {error}
+          </div>
+        )}
+      </div>
+
+      {/* Results Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <AnimatePresence>
+          {doctors.map((doc, idx) => (
+            <motion.div
+              key={idx}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: idx * 0.1 }}
+              className="glass-card p-5 hover:border-cyan-500/50 group"
+            >
+              <div className="flex gap-4">
+                <div className="w-20 h-20 rounded-xl bg-gray-800 overflow-hidden shrink-0 border border-gray-700">
+                  <img src={`https://api.dicebear.com/9.x/avataaars/svg?seed=${doc.name}&clothing=blazerAndShirt`} alt="Doc" className="w-full h-full object-cover" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-bold text-white">{doc.name}</h3>
+                  <p className="text-cyan-400 text-sm font-medium">{doc.specialty}</p>
+                  <div className="flex items-center gap-1 text-yellow-400 text-xs mt-1">
+                    <Star size={12} fill="currentColor" /> {doc.rating}
+                  </div>
+                  <p className="text-gray-400 text-xs mt-2 line-clamp-2">{doc.bio}</p>
+                </div>
+              </div>
+
+              {/* Contact Info */}
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                 <button 
+                    onClick={() => copyToClipboard(doc.phone, doc.id)}
+                    className="bg-[#0f172a]/50 hover:bg-[#0f172a] p-2 rounded-lg flex items-center gap-2 text-xs text-gray-300 transition-colors group/btn"
+                 >
+                    {copiedPhone === doc.id ? <Check size={12} className="text-emerald-400" /> : <Phone size={12} className="text-cyan-400" />}
+                    <span className="truncate">{copiedPhone === doc.id ? "Copied!" : (doc.phone || "N/A")}</span>
+                 </button>
+                 <a 
+                    href={`mailto:${doc.email}`}
+                    className="bg-[#0f172a]/50 hover:bg-[#0f172a] p-2 rounded-lg flex items-center gap-2 text-xs text-gray-300 transition-colors"
+                 >
+                    <Mail size={12} className="text-cyan-400" />
+                    <span className="truncate">{doc.email || "N/A"}</span>
+                 </a>
+              </div>
+              
+              <div className="mt-4 pt-4 border-t border-white/5">
+                <a 
+                   href={doc.mapUrl} 
+                   target="_blank" 
+                   rel="noreferrer"
+                   className="flex items-center gap-2 text-gray-400 text-xs mb-3 hover:text-cyan-400 transition-colors"
+                >
+                  <MapPin size={12} /> {doc.location} (Get Directions)
+                </a>
+                
+                {selectedDoc === doc.id ? (
+                  <div className="space-y-2 animate-fade-in-up">
+                    <p className="text-xs text-white font-semibold mb-2">Select a time:</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {doc.availableSlots.map(slot => (
+                        <button
+                          key={slot}
+                          onClick={() => {
+                            onBook(doc, slot, symptoms);
+                            setSelectedDoc(null);
+                          }}
+                          className="px-2 py-1.5 bg-cyan-900/30 text-cyan-200 text-xs rounded hover:bg-cyan-600 hover:text-white transition-colors border border-cyan-500/20"
+                        >
+                          {slot}
+                        </button>
+                      ))}
+                    </div>
+                    <button 
+                      onClick={() => setSelectedDoc(null)}
+                      className="text-xs text-gray-500 underline w-full text-center mt-2"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <button 
+                    onClick={() => setSelectedDoc(doc.id)}
+                    className="w-full py-2 bg-white/5 hover:bg-cyan-600 text-white text-sm font-semibold rounded-lg transition-colors border border-white/10"
+                  >
+                    Book Appointment
+                  </button>
+                )}
+              </div>
+            </motion.div>
+          ))}
+        </AnimatePresence>
       </div>
     </div>
   );
