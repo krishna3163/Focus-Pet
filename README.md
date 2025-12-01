@@ -19,6 +19,29 @@
 ## 📸 Preview
 
 > 🎨 **Beautiful UI with anime-inspired design** featuring smooth animations, glassmorphism effects, and a calming dark theme with vibrant gradients
+>
+> ### 🎨 Visual Showcase
+
+#### Main Focus Timer Interface
+- **Pomodoro Timer**: Beautiful circular timer display (25:00 default)
+- **Multiple Modes**: Focus, Short Break, Long Break buttons
+- **Pet Companion**: Adorable virtual pet display that reacts to your focus
+- **Start Button**: Large, easy-to-tap play button for starting sessions
+- **Dark Theme**: Easy on the eyes with purple gradient accents
+
+#### Statistics & Analytics Dashboard  
+- **Weekly Activity Chart**: Visual representation of your focus patterns
+- **Progress Tracking**: Total focus hours, sessions completed, distractions tracked
+- **Daily Breakdown**: See which days you focused the most
+- **Trends**: AI-powered insights about your productivity habits
+
+#### Settings & Customization
+- **Appearance & Vibe**: Theme packs (Bubbly default theme)
+- **Pet Companion Selection**: Choose from Cat, Dog, Robot, Blob characters
+- **Personalization**: Set your name and customize timer durations
+- **Google API Integration**: AI chat feature for smart insights
+
+> 📸 **Live App Preview**: Visit the deployed application to see the full interactive experience!
 
 ---
 
